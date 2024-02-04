@@ -12,9 +12,9 @@
 
 using namespace std;
 
-const int screenWidth = 1000;
-const int screenHeight = 800;
-const int pixelSize = 4; // min 2
+const int screenWidth = 2000;
+const int screenHeight = 1600;
+const int pixelSize = 8; // min 2
 const int gridWidth = screenWidth / pixelSize;
 const int gridHeight = screenHeight / pixelSize;
 const int mouseGrid = 5;
@@ -239,39 +239,41 @@ void updateWater(Particle grid[gridWidth][gridHeight]) {
             }
 
             else if (!movedDown) {
-                if (side == "LEFT" && x > 0 && grid[x - 1][y + 1].state == -1) {
-                    grid[x - 1][y + 1] = grid[x][y]; // Move water down left
-                    movedDown = true;
-                    grid[x][y].state = -1; 
-                }
-                else if (side == "RIGHT" && x < gridWidth - 1 && grid[x + 1][y + 1].state == -1) {
-                    grid[x + 1][y + 1] = grid[x][y]; // Move water down right
-                    movedDown = true;
-                    grid[x][y].state = -1; 
-                }
+                if (side == "LEFT" && x > 0 && grid[x - 1][y].state == -1) {
 
-                if (!movedDown) {
-                    if (side == "LEFT" && x > 0 && grid[x - 1][y].state == -1) {
-                        int tmp = 0;
-                        for (int i = 1; i <= viscosity; i++) {
-                            if (x - i >= 0 && grid[x - i][y].state == -1) {
-                                tmp = i;
-                            }
+                    int tmp = 0;
+                    for (int i = 1; i <= viscosity- 2; i++) {
+                        if (x - i >= 0 && grid[x - i][y].state == -1) {
+                            if (grid[x + (i + 1)][y].state != -1 && grid[x + (i + 1)][y].state != 2) break;
+                            tmp = i;
                         }
+                    }
+
+                    if (grid[x - tmp][y + 1].state == -1 && x - tmp >= 0) {
+                        grid[x - tmp][y + 1] = grid[x][y];
+                    }
+                    else {
                         grid[x - tmp][y] = grid[x][y]; // Move water left
-                        grid[x][y].state = -1; 
                     }
-                    
-                    else if (side == "RIGHT" && x < gridWidth - 1 && grid[x + 1][y].state == -1) {
-                        int tmp = 0;
-                        for (int i = 1; i <= viscosity; i++) {
-                            if (x + i < gridWidth && grid[x + i][y].state == -1) {
-                                tmp = i;
-                            }
+                    grid[x][y].state = -1;
+                }
+                
+                else if (side == "RIGHT" && x < gridWidth - 1 && grid[x + 1][y].state == -1) {
+                    int tmp = 0;
+                    for (int i = 1; i <= viscosity; i++) {
+                        if (x + i < gridWidth && grid[x + i][y].state == -1) {
+                            if (grid[x - (i + 1)][y].state != -1 && grid[x - (i + 1)][y].state != 2) break;
+                            tmp = i;
                         }
-                        grid[x + tmp][y] = grid[x][y]; // Move water right
-                        grid[x][y].state = -1; 
                     }
+
+                    if (grid[x + tmp][y + 1].state == -1 && x + tmp >= 0) {
+                        grid[x + tmp][y + 1] = grid[x][y];
+                    }
+                    else {
+                        grid[x + tmp][y] = grid[x][y]; // Move water left
+                    }
+                    grid[x][y].state = -1;
                 }
             }
 
