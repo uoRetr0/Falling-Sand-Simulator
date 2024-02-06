@@ -12,15 +12,15 @@
 
 using namespace std;
 
-const int screenWidth = 2000;
-const int screenHeight = 1600;
-const int pixelSize = 8; // min 2
+const int screenWidth = 1000;
+const int screenHeight = 800;
+const int pixelSize = 4; // min 2
 const int gridWidth = screenWidth / pixelSize;
 const int gridHeight = screenHeight / pixelSize;
 const int mouseGrid = 5;
 const float gravity = 2;
 const int viscosity = 8; // for liquids only
-const int frequency = 15;
+const int frequency = 80;
 
 struct Particle {
     int state; // -1:empty, 0:stone, 1:sand, 2:water, 3:wet sand
@@ -56,7 +56,7 @@ Color stoneColor() {
 
     int randomIndex = rand() % colors.size();
     auto selectedColor = colors[randomIndex];
-    return (Color){selectedColor[0], selectedColor[1], selectedColor[2], 255};
+    return (Color){static_cast<unsigned char>(selectedColor[0]), static_cast<unsigned char>(selectedColor[1]), static_cast<unsigned char>(selectedColor[2]), 255};
 }
 
 Color sandColor() {
@@ -74,7 +74,7 @@ Color sandColor() {
 
     int randomIndex = rand() % colors.size();
     auto selectedColor = colors[randomIndex];
-    return (Color){selectedColor[0], selectedColor[1], selectedColor[2], 255};
+    return (Color){static_cast<unsigned char>(selectedColor[0]), static_cast<unsigned char>(selectedColor[1]), static_cast<unsigned char>(selectedColor[2]), 255};
 }
 
 Color wetSandColor() {
@@ -89,7 +89,7 @@ Color wetSandColor() {
 
     int randomIndex = rand() % colors.size();
     auto selectedColor = colors[randomIndex];
-    return (Color){selectedColor[0], selectedColor[1], selectedColor[2], 255};
+    return (Color){static_cast<unsigned char>(selectedColor[0]), static_cast<unsigned char>(selectedColor[1]), static_cast<unsigned char>(selectedColor[2]), 255};
 }
 
 Color waterColor() {
@@ -104,7 +104,7 @@ Color waterColor() {
 
     int randomIndex = rand() % colors.size();
     auto selectedColor = colors[randomIndex];
-    return (Color){selectedColor[0], selectedColor[1], selectedColor[2], 255};
+    return (Color){static_cast<unsigned char>(selectedColor[0]), static_cast<unsigned char>(selectedColor[1]), static_cast<unsigned char>(selectedColor[2]), 255};
 }
 
 void updateStone(Particle grid[gridWidth][gridHeight]) {
@@ -193,6 +193,7 @@ void updateWetSand(Particle grid[gridWidth][gridHeight]) {
     for (int x = 0; x < gridWidth; x++) {
         for (int y = gridHeight - 2; y >= 0; y--) {
             if (grid[x][y].state != 3) continue;
+            int odd = rand() % 100 + 1;
 
             if (grid[x][y].life == 0) {
                 grid[x][y].color = wetSandColor();
@@ -203,8 +204,30 @@ void updateWetSand(Particle grid[gridWidth][gridHeight]) {
                 grid[x][y + 1] = grid[x][y];
                 grid[x][y].state = -1;
             }
+            
+            else if (grid[x][y].state == 3 && (grid[x][y + 1].state != -1 || grid[x][y + 1].state != 2) && odd < 20) {
 
-            if (grid[x][y + 1].state == 2) {
+                if (dir() == "LEFT" && x > 0 && grid[x - 1][y + 1].state == -1) {
+                    grid[x - 1][y + 1] = grid[x][y]; // Move sand down left
+                    grid[x][y].state = -1; 
+                }
+                else if (dir() == "LEFT" && x > 0 && grid[x - 1][y + 1].state == 2) {
+                    Particle tmp = grid[x - 1][y + 1];
+                    grid[x - 1][y + 1] = grid[x][y]; // swap sand down left
+                    grid[x][y] = tmp;
+                }
+                else if (dir() == "RIGHT" && x < gridWidth - 1 && grid[x + 1][y + 1].state == -1) {
+                    grid[x + 1][y + 1] = grid[x][y]; // Move sand down right
+                    grid[x][y].state = -1; 
+                }
+                else if (dir() == "RIGHT" && x < gridWidth - 1 && grid[x + 1][y + 1].state == 2) {
+                    Particle tmp = grid[x + 1][y + 1];
+                    grid[x + 1][y + 1] = grid[x][y]; // swap sand down right
+                    grid[x][y] = tmp;
+                }
+            }
+
+            if (grid[x][y + 1].state == 2) { // water swap
                 Particle tmp = grid[x][y];
                 grid[x][y] = grid[x][y + 1];
                 grid[x][y + 1] = tmp;
@@ -241,38 +264,38 @@ void updateWater(Particle grid[gridWidth][gridHeight]) {
             else if (!movedDown) {
                 if (side == "LEFT" && x > 0 && grid[x - 1][y].state == -1) {
 
-                    int tmp = 0;
-                    for (int i = 1; i <= viscosity- 2; i++) {
-                        if (x - i >= 0 && grid[x - i][y].state == -1) {
-                            if (grid[x + (i + 1)][y].state != -1 && grid[x + (i + 1)][y].state != 2) break;
-                            tmp = i;
-                        }
-                    }
+                    // int tmp = 0;
+                    // for (int i = 1; i <= viscosity- 2; i++) {
+                    //     if (x - i >= 0 && grid[x - i][y].state == -1) {
+                    //         if (grid[x + (i + 1)][y].state != -1 && grid[x + (i + 1)][y].state != 2) break;
+                    //         tmp = i;
+                    //     }
+                    // }
 
-                    if (grid[x - tmp][y + 1].state == -1 && x - tmp >= 0) {
-                        grid[x - tmp][y + 1] = grid[x][y];
-                    }
-                    else {
-                        grid[x - tmp][y] = grid[x][y]; // Move water left
-                    }
+                    // if (grid[x - tmp][y + 1].state == -1 && x - tmp >= 0) {
+                    //     grid[x - tmp][y + 1] = grid[x][y];
+                    // }
+                    // else {
+                        grid[x - 1][y] = grid[x][y]; // Move water left
+                    // }
                     grid[x][y].state = -1;
                 }
                 
                 else if (side == "RIGHT" && x < gridWidth - 1 && grid[x + 1][y].state == -1) {
-                    int tmp = 0;
-                    for (int i = 1; i <= viscosity; i++) {
-                        if (x + i < gridWidth && grid[x + i][y].state == -1) {
-                            if (grid[x - (i + 1)][y].state != -1 && grid[x - (i + 1)][y].state != 2) break;
-                            tmp = i;
-                        }
-                    }
+                    // int tmp = 0;
+                    // for (int i = 1; i <= viscosity; i++) {
+                    //     if (x + i < gridWidth && grid[x + i][y].state == -1) {
+                    //         if (grid[x - (i + 1)][y].state != -1 && grid[x - (i + 1)][y].state != 2) break;
+                    //         tmp = i;
+                    //     }
+                    // }
 
-                    if (grid[x + tmp][y + 1].state == -1 && x + tmp >= 0) {
-                        grid[x + tmp][y + 1] = grid[x][y];
-                    }
-                    else {
-                        grid[x + tmp][y] = grid[x][y]; // Move water left
-                    }
+                    // if (grid[x + tmp][y + 1].state == -1 && x + tmp >= 0) {
+                    //     grid[x + tmp][y + 1] = grid[x][y];
+                    // }
+                    // else {
+                        grid[x + 1][y] = grid[x][y]; // Move water left
+                    // }
                     grid[x][y].state = -1;
                 }
             }
@@ -319,6 +342,10 @@ void mouseDrag(Particle grid[gridWidth][gridHeight]) {
                     int odd = rand() % 100 + 1;
                     
                     if (currentElement == ELEMENT_ERASE) {
+                        grid[gridX][gridY] = particle;
+                    }
+
+                    else if (currentElement == ELEMENT_STONE && odd < 80) {
                         grid[gridX][gridY] = particle;
                     }
                     
@@ -380,7 +407,6 @@ void updateSimulation() {
     applyUpdates();
 }
 
-
 int main() {
     InitWindow(screenWidth, screenHeight, "SAND SIMULATOR");
     SetTargetFPS(60);
@@ -401,7 +427,6 @@ int main() {
                 }
             }
         }
-        
 
         if (GuiButton((Rectangle){screenWidth - 110, 10, 100, 30}, "CLEAR")) {
             clear(currentGrid);
