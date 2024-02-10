@@ -132,6 +132,7 @@ void updateStone(Particle grid[gridWidth][gridHeight]) {
     }
 }
 
+
 void updateSand(Particle grid[gridWidth][gridHeight]) {
     for (int x = 0; x < gridWidth; x++) {
         for (int y = gridHeight - 2; y >= 0; y--) {
@@ -189,6 +190,7 @@ void updateSand(Particle grid[gridWidth][gridHeight]) {
     }
 }
 
+
 void updateWetSand(Particle grid[gridWidth][gridHeight]) {
     for (int x = 0; x < gridWidth; x++) {
         for (int y = gridHeight - 2; y >= 0; y--) {
@@ -235,6 +237,7 @@ void updateWetSand(Particle grid[gridWidth][gridHeight]) {
         }
     }
 }
+
 
 void updateWater(Particle grid[gridWidth][gridHeight]) {
     for (int x = 0; x < gridWidth; x++) {
@@ -302,6 +305,7 @@ void updateWater(Particle grid[gridWidth][gridHeight]) {
         }
     }
 }
+
 
 void mouseDrag(Particle grid[gridWidth][gridHeight]) {
     if (IsMouseButtonDown(MOUSE_LEFT_BUTTON)) {
