@@ -23,7 +23,7 @@ const int viscosity = 8; // for liquids only
 const int frequency = 15;
 
 struct Particle {
-    int state; // -1:empty, 0:stone, 1:sand, 2:water, 3:wet sand
+    int state; // -1:empty, 0:stone, 1:sand, 2:water, 3:wet sand, 4:suspended stone, 5:mud, 6:plant
     Color color;
     int velocity;
     int life;
@@ -34,7 +34,10 @@ enum ElementType {
     ELEMENT_ERASE,
     ELEMENT_STONE,
     ELEMENT_SAND,
-    ELEMENT_WATER
+    ELEMENT_WATER,
+    ELEMENT_SUSPENDED_STONE,
+    ELEMENT_MUD,
+
 };
 
 ElementType currentElement = ELEMENT_NONE;
@@ -106,6 +109,33 @@ Color waterColor() {
     auto selectedColor = colors[randomIndex];
     return (Color){static_cast<unsigned char>(selectedColor[0]), static_cast<unsigned char>(selectedColor[1]), static_cast<unsigned char>(selectedColor[2]), 255};
 }
+
+Color mudColor() {
+    vector<array<int, 3>> colors = {
+        {44, 33, 24},
+        {54, 43, 34},
+        {34, 23, 14},
+        {39, 28, 19},
+        {59, 48, 39}
+    };
+
+    int randomIndex = rand() % colors.size();
+    auto selectedColor = colors[randomIndex];
+    return (Color){static_cast<unsigned char>(selectedColor[0]), static_cast<unsigned char>(selectedColor[1]), static_cast<unsigned char>(selectedColor[2]), 255};
+}
+
+Color plantColor() {
+    vector<array<int, 3>> colors = {
+        {69, 242, 72},
+        {79, 252, 82},
+        
+    };
+
+    int randomIndex = rand() % colors.size();
+    auto selectedColor = colors[randomIndex];
+    return (Color){static_cast<unsigned char>(selectedColor[0]), static_cast<unsigned char>(selectedColor[1]), static_cast<unsigned char>(selectedColor[2]), 255};
+}
+
 
 void updateStone(Particle grid[gridWidth][gridHeight]) {
     for (int x = 0; x < gridWidth; x++) {
@@ -266,47 +296,14 @@ void updateWater(Particle grid[gridWidth][gridHeight]) {
 
             else if (!movedDown) {
                 if (side == "LEFT" && x > 0 && grid[x - 1][y + 1].state == -1) {
-                    
-                    int tmp = 0;
-                    for (int i = 1; i <= viscosity - 2; i++) {
-                        if (x - i >= 0 && grid[x - i][y + 1].state == -1) {
-                            // Check if the particle before the potential new position is water
-                            if (grid[x - (i - 1)][y + 1].state != 2) {
-                                break;
-                            }
-                            if (grid[x - (i + 1)][y + 1].state != -1 && grid[x - (i + 1)][y + 1].state != 2) {
-                                break;
-                            }
-                            tmp = i;
-                        }
-
-                        if (tmp > 0) {
-                            grid[x - tmp][y + 1] = grid[x][y]; // Move water left
-                            grid[x][y].state = -1;
-                            movedDown = true;
-                        }
-                    }
+                    grid[x - 1][y + 1] = grid[x][y]; // Move water down left
+                    movedDown = true;
+                    grid[x][y].state = -1; 
                 }
                 else if (side == "RIGHT" && x < gridWidth - 1 && grid[x + 1][y + 1].state == -1) {
-
-                    int tmp = 0;
-                    for (int i = 1; i <= viscosity; i++) {
-                        if (x + i < gridWidth && grid[x + i][y + 1].state == -1) {
-                            // Check if the particle before the potential new position is water
-                            if (grid[x + (i - 1)][y + 1].state != 2) {
-                                break;
-                            }
-                            if (grid[x + (i + 1)][y + 1].state != -1 && grid[x + (i + 1)][y + 1].state != 2) {
-                                break;
-                            }
-                            tmp = i;
-                        }
-                        if (tmp > 0) {
-                            grid[x + tmp][y + 1] = grid[x][y]; // Move water left
-                            grid[x][y].state = -1;
-                            movedDown = true;
-                        }
-                    }
+                    grid[x + 1][y + 1] = grid[x][y]; // Move water down right
+                    movedDown = true;
+                    grid[x][y].state = -1; 
                 }
 
                 if (!movedDown) {
@@ -314,10 +311,6 @@ void updateWater(Particle grid[gridWidth][gridHeight]) {
                         int tmp = 0;
                         for (int i = 1; i <= viscosity - 2; i++) {
                             if (x - i >= 0 && grid[x - i][y].state == -1) {
-                                // Check if the particle before the potential new position is water
-                                if (grid[x - (i - 1)][y].state != 2) {
-                                    break;
-                                }
                                 if (grid[x - (i + 1)][y].state != -1 && grid[x - (i + 1)][y].state != 2) {
                                     break;
                                 }
@@ -334,10 +327,6 @@ void updateWater(Particle grid[gridWidth][gridHeight]) {
                         int tmp = 0;
                         for (int i = 1; i <= viscosity; i++) {
                             if (x + i < gridWidth && grid[x + i][y].state == -1) {
-                                // Check if the particle before the potential new position is water
-                                if (grid[x + (i - 1)][y].state != 2) {
-                                    break;
-                                }
                                 if (grid[x + (i + 1)][y].state != -1 && grid[x + (i + 1)][y].state != 2) {
                                     break;
                                 }
@@ -351,11 +340,74 @@ void updateWater(Particle grid[gridWidth][gridHeight]) {
                     }
                 }
 
-
             }
 
             if (rand() % 100 < 1) {
                 grid[x][y].color = waterColor();
+            }
+        }
+    }
+}
+
+void updateMud(Particle grid[gridWidth][gridHeight]) {
+    for (int x = 0; x < gridWidth; x++) {
+        for (int y = gridHeight - 2; y >= 0; y--) {
+            if (grid[x][y].state != 5) continue;
+            int odd = rand() % 100 + 1;
+
+            if (grid[x][y].state == 5 && grid[x][y + 1].state == -1) { // If there's space below
+                int tmp = 0;
+                for (int i = 1; i <= gravity; i++) {
+                    if (grid[x][y + i].state == -1 && y + i < gridHeight ) {
+                        tmp = i;
+                    }
+                }
+                grid[x][y + tmp] = grid[x][y];
+                grid[x][y].state = -1;
+            }
+
+            else if (grid[x][y].state == 5 && (grid[x][y + 1].state != -1 || grid[x][y + 1].state != 2) && odd < 5) {
+
+                if (dir() == "LEFT" && x > 0 && grid[x - 1][y + 1].state == -1) {
+                    grid[x - 1][y + 1] = grid[x][y]; // Move mud down left
+                    grid[x][y].state = -1; 
+                }
+                
+                else if (dir() == "RIGHT" && x < gridWidth - 1 && grid[x + 1][y + 1].state == -1) {
+                    grid[x + 1][y + 1] = grid[x][y]; // Move mud down right
+                    grid[x][y].state = -1; 
+                }
+            }
+
+            if (grid[x][y - 1].state == 2) {
+                grid[x][y - 1].state = -1;
+                grid[x][y] = {6, plantColor(), 0, 1};
+                if (y + 1 <= gridHeight - 1) {
+                    grid[x][y + 1] = {6, plantColor(), 0, 1};
+                }
+            }
+        }
+    }
+}
+
+void updatePlant(Particle grid[gridWidth][gridHeight]) {
+    for (int x = 0; x < gridWidth; x++) {
+        for (int y = gridHeight - 2; y >= 0; y--) {
+            if (grid[x][y].state != 6) continue;
+            
+            if (grid[x][y].state == 6 && grid[x][y + 1].state == -1) { // If there's space below
+                int tmp = 0;
+                for (int i = 1; i <= gravity; i++) {
+                    if (grid[x][y + i].state == -1 && y + i < gridHeight ) {
+                        tmp = i;
+                    }
+                }
+                grid[x][y + tmp] = grid[x][y];
+                grid[x][y].state = -1;
+            }
+
+            if (grid[x][y - 1].state == 2) {
+                grid[x][y - 1].state = -1;
             }
         }
     }
@@ -376,7 +428,13 @@ void mouseDrag(Particle grid[gridWidth][gridHeight]) {
                 particle = {1, sandColor(), 0}; ///////////////////////////////////////////////////////////////////////////
                 break;
             case ELEMENT_WATER:
-                particle = {2, waterColor(), 0};
+                particle = {2, waterColor()};
+                break;
+            case ELEMENT_SUSPENDED_STONE:
+                particle = {4, stoneColor()};
+                break;
+            case ELEMENT_MUD:
+                particle = {5, mudColor()};
                 break;
             default:
                 return;
@@ -400,7 +458,7 @@ void mouseDrag(Particle grid[gridWidth][gridHeight]) {
                         grid[gridX][gridY] = particle;
                     }
 
-                    else if (currentElement == ELEMENT_STONE && odd < 80) {
+                    else if ((currentElement == ELEMENT_STONE || currentElement == ELEMENT_SUSPENDED_STONE) && odd < 80) {
                         grid[gridX][gridY] = particle;
                     }
                     
@@ -452,6 +510,8 @@ void updateSimulation() {
     updateSand(currentGrid);
     updateWetSand(currentGrid);
     updateWater(currentGrid);
+    updateMud(currentGrid);
+    updatePlant(currentGrid);
 
     for (int x = 0; x < gridWidth; x++) {
         for (int y = 0; y < gridHeight; y++) {
@@ -501,6 +561,14 @@ int main() {
 
         if (GuiButton((Rectangle){280, 10, 80, 30}, "STONE")) {
             currentElement = (currentElement == ELEMENT_STONE) ? ELEMENT_NONE : ELEMENT_STONE;
+        }
+
+        if (GuiButton((Rectangle){370, 10, 80, 30}, "SUS STONE")) {
+            currentElement = (currentElement == ELEMENT_SUSPENDED_STONE) ? ELEMENT_NONE : ELEMENT_SUSPENDED_STONE;
+        }
+
+        if (GuiButton((Rectangle){460, 10, 80, 30}, "MUD")) {
+            currentElement = (currentElement == ELEMENT_MUD) ? ELEMENT_NONE : ELEMENT_MUD;
         }
 
         mouseDrag(currentGrid);
