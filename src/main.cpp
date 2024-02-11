@@ -12,18 +12,18 @@
 
 using namespace std;
 
-const int screenWidth = 1000;
-const int screenHeight = 800;
-const int pixelSize = 4; // min 2
+const int screenWidth = 2000;
+const int screenHeight = 1600;
+const int pixelSize = 8; // min 2
 const int gridWidth = screenWidth / pixelSize;
 const int gridHeight = screenHeight / pixelSize;
-const int mouseGrid = 5;
-const float gravity = 2;
+const int mouseGrid = 10;
+const float gravity = 4;
 const int viscosity = 8; // for liquids only
 const int frequency = 15;
 
 struct Particle {
-    int state; // -1:empty, 0:stone, 1:sand, 2:water, 3:wet sand, 4:suspended stone, 5:mud, 6:plant
+    int state; // -1:empty, 0:stone, 1:sand, 2:water, 3:wet sand, 4:suspended stone, 5:dirt, 6:plant, 7:wet dirt
     Color color;
     int velocity;
     int life;
@@ -36,8 +36,7 @@ enum ElementType {
     ELEMENT_SAND,
     ELEMENT_WATER,
     ELEMENT_SUSPENDED_STONE,
-    ELEMENT_MUD,
-
+    ELEMENT_DIRT,
 };
 
 ElementType currentElement = ELEMENT_NONE;
@@ -110,7 +109,7 @@ Color waterColor() {
     return (Color){static_cast<unsigned char>(selectedColor[0]), static_cast<unsigned char>(selectedColor[1]), static_cast<unsigned char>(selectedColor[2]), 255};
 }
 
-Color mudColor() {
+Color dirtColor() {
     vector<array<int, 3>> colors = {
         {44, 33, 24},
         {54, 43, 34},
@@ -126,9 +125,17 @@ Color mudColor() {
 
 Color plantColor() {
     vector<array<int, 3>> colors = {
-        {69, 242, 72},
-        {79, 252, 82},
-        
+        {69, 171, 21},   // Original color
+        {74, 176, 25},   // Slightly lighter
+        {64, 166, 18},   // Slightly darker
+        {69, 176, 21},   // More green
+        {69, 166, 21},   // Less green
+        {74, 171, 25},   // Lighter and slightly more vibrant
+        {64, 171, 18},   // Darker and slightly more muted
+        {69, 171, 26},   // Slightly more blue
+        {69, 171, 16},   // Slightly less blue
+        {74, 166, 26},   // Lighter with less green and more blue
+
     };
 
     int randomIndex = rand() % colors.size();
@@ -136,6 +143,19 @@ Color plantColor() {
     return (Color){static_cast<unsigned char>(selectedColor[0]), static_cast<unsigned char>(selectedColor[1]), static_cast<unsigned char>(selectedColor[2]), 255};
 }
 
+Color wetDirtColor() {
+    vector<array<int, 3>> colors = {
+        {28, 18, 15},  // Darker, with a hint of cool moisture
+        {38, 28, 25},  // Slightly lighter, still retaining cool, wet undertones
+        {43, 33, 30},  // A balanced mix, slightly brighter but maintaining the wet look
+        {25, 15, 12},  // Very dark, emphasizing the deep moisture absorption
+        
+    };
+
+    int randomIndex = rand() % colors.size();
+    auto selectedColor = colors[randomIndex];
+    return (Color){static_cast<unsigned char>(selectedColor[0]), static_cast<unsigned char>(selectedColor[1]), static_cast<unsigned char>(selectedColor[2]), 255};
+}
 
 void updateStone(Particle grid[gridWidth][gridHeight]) {
     for (int x = 0; x < gridWidth; x++) {
@@ -349,11 +369,15 @@ void updateWater(Particle grid[gridWidth][gridHeight]) {
     }
 }
 
-void updateMud(Particle grid[gridWidth][gridHeight]) {
+void updateDirt(Particle grid[gridWidth][gridHeight]) {
     for (int x = 0; x < gridWidth; x++) {
         for (int y = gridHeight - 2; y >= 0; y--) {
             if (grid[x][y].state != 5) continue;
             int odd = rand() % 100 + 1;
+
+            if (grid[x][y + 1].state == 2) {
+                grid[x][y] = {7, wetDirtColor(), 0, 0};
+            }
 
             if (grid[x][y].state == 5 && grid[x][y + 1].state == -1) { // If there's space below
                 int tmp = 0;
@@ -369,12 +393,12 @@ void updateMud(Particle grid[gridWidth][gridHeight]) {
             else if (grid[x][y].state == 5 && (grid[x][y + 1].state != -1 || grid[x][y + 1].state != 2) && odd < 5) {
 
                 if (dir() == "LEFT" && x > 0 && grid[x - 1][y + 1].state == -1) {
-                    grid[x - 1][y + 1] = grid[x][y]; // Move mud down left
+                    grid[x - 1][y + 1] = grid[x][y]; // Move dirt down left
                     grid[x][y].state = -1; 
                 }
                 
                 else if (dir() == "RIGHT" && x < gridWidth - 1 && grid[x + 1][y + 1].state == -1) {
-                    grid[x + 1][y + 1] = grid[x][y]; // Move mud down right
+                    grid[x + 1][y + 1] = grid[x][y]; // Move dirt down right
                     grid[x][y].state = -1; 
                 }
             }
@@ -386,6 +410,52 @@ void updateMud(Particle grid[gridWidth][gridHeight]) {
                     grid[x][y + 1] = {6, plantColor(), 0, 1};
                 }
             }
+            else if (grid[x][y + 1].state == 2) {
+                grid[x][y] = {7, wetDirtColor(), 0, 0};
+            }
+        }
+    }
+}
+
+void updateWetDirt(Particle grid[gridWidth][gridHeight]) {
+    for (int x = 0; x < gridWidth; x++) {
+        for (int y = gridHeight - 2; y >= 0; y--) {
+            if (grid[x][y].state != 7) continue;
+            int odd = rand() % 100 + 1;
+
+
+            if (grid[x][y].state == 7 && grid[x][y + 1].state == -1) { // If there's space below
+                grid[x][y + 1] = grid[x][y];
+                grid[x][y].state = -1;
+            }
+            
+            else if (grid[x][y].state == 7 && (grid[x][y + 1].state != -1 || grid[x][y + 1].state != 2) && odd < 5) {
+
+                if (dir() == "LEFT" && x > 0 && grid[x - 1][y + 1].state == -1) {
+                    grid[x - 1][y + 1] = grid[x][y]; // Move sand down left
+                    grid[x][y].state = -1; 
+                }
+                else if (dir() == "LEFT" && x > 0 && grid[x - 1][y + 1].state == 2) {
+                    Particle tmp = grid[x - 1][y + 1];
+                    grid[x - 1][y + 1] = grid[x][y]; // swap sand down left
+                    grid[x][y] = tmp;
+                }
+                else if (dir() == "RIGHT" && x < gridWidth - 1 && grid[x + 1][y + 1].state == -1) {
+                    grid[x + 1][y + 1] = grid[x][y]; // Move sand down right
+                    grid[x][y].state = -1; 
+                }
+                else if (dir() == "RIGHT" && x < gridWidth - 1 && grid[x + 1][y + 1].state == 2) {
+                    Particle tmp = grid[x + 1][y + 1];
+                    grid[x + 1][y + 1] = grid[x][y]; // swap sand down right
+                    grid[x][y] = tmp;
+                }
+            }
+
+            if (grid[x][y + 1].state == 2) { // water swap
+                Particle tmp = grid[x][y];
+                grid[x][y] = grid[x][y + 1];
+                grid[x][y + 1] = tmp;
+            }
         }
     }
 }
@@ -394,7 +464,13 @@ void updatePlant(Particle grid[gridWidth][gridHeight]) {
     for (int x = 0; x < gridWidth; x++) {
         for (int y = gridHeight - 2; y >= 0; y--) {
             if (grid[x][y].state != 6) continue;
+            int maxLife = 10;
+            int odd = rand() % 100 + 1;
             
+            if (odd < 2 && grid[x][y].life < maxLife) {
+                grid[x][y].life += 1;
+            }
+
             if (grid[x][y].state == 6 && grid[x][y + 1].state == -1) { // If there's space below
                 int tmp = 0;
                 for (int i = 1; i <= gravity; i++) {
@@ -405,9 +481,21 @@ void updatePlant(Particle grid[gridWidth][gridHeight]) {
                 grid[x][y + tmp] = grid[x][y];
                 grid[x][y].state = -1;
             }
+            else if (grid[x][y + 1].state == 2) {
+                grid[x][y] = {-1, BLACK, 0, 0};
+            }
 
-            if (grid[x][y - 1].state == 2) {
+            odd = rand() % 100 + 1;
+            if (grid[x][y - 1].state == 2 && odd < 5) {
                 grid[x][y - 1].state = -1;
+            }
+            
+            
+            odd = rand() % 2 + 1;
+            int tmp = 0;
+            if (odd == 2) tmp = maxLife;
+            if (grid[x][y].life > 5 && grid[x][y].life < maxLife && grid[x][y - 1].state == -1) {
+                grid[x][y - 1] = {6, plantColor(), 0, tmp};
             }
         }
     }
@@ -433,8 +521,8 @@ void mouseDrag(Particle grid[gridWidth][gridHeight]) {
             case ELEMENT_SUSPENDED_STONE:
                 particle = {4, stoneColor()};
                 break;
-            case ELEMENT_MUD:
-                particle = {5, mudColor()};
+            case ELEMENT_DIRT:
+                particle = {5, dirtColor()};
                 break;
             default:
                 return;
@@ -510,8 +598,9 @@ void updateSimulation() {
     updateSand(currentGrid);
     updateWetSand(currentGrid);
     updateWater(currentGrid);
-    updateMud(currentGrid);
+    updateDirt(currentGrid);
     updatePlant(currentGrid);
+    updateWetDirt(currentGrid);
 
     for (int x = 0; x < gridWidth; x++) {
         for (int y = 0; y < gridHeight; y++) {
@@ -567,8 +656,8 @@ int main() {
             currentElement = (currentElement == ELEMENT_SUSPENDED_STONE) ? ELEMENT_NONE : ELEMENT_SUSPENDED_STONE;
         }
 
-        if (GuiButton((Rectangle){460, 10, 80, 30}, "MUD")) {
-            currentElement = (currentElement == ELEMENT_MUD) ? ELEMENT_NONE : ELEMENT_MUD;
+        if (GuiButton((Rectangle){460, 10, 80, 30}, "DIRT")) {
+            currentElement = (currentElement == ELEMENT_DIRT) ? ELEMENT_NONE : ELEMENT_DIRT;
         }
 
         mouseDrag(currentGrid);
