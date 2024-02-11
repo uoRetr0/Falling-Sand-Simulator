@@ -23,7 +23,7 @@ const int viscosity = 8; // for liquids only
 const int frequency = 15;
 
 struct Particle {
-    int state; // -1:empty, 0:stone, 1:sand, 2:water, 3:wet sand, 4:suspended stone, 5:dirt, 6:plant, 7:wet dirt
+    int state; // -1:empty, 0:stone, 1:sand, 2:water, 3:wet sand, 4:suspended stone, 5:dirt, 6:plant, 7:wet dirt, 8:fire, 9:smoke
     Color color;
     int velocity;
     int life;
@@ -37,6 +37,7 @@ enum ElementType {
     ELEMENT_WATER,
     ELEMENT_SUSPENDED_STONE,
     ELEMENT_DIRT,
+    ELEMENT_FIRE,
 };
 
 ElementType currentElement = ELEMENT_NONE;
@@ -157,6 +158,53 @@ Color wetDirtColor() {
     return (Color){static_cast<unsigned char>(selectedColor[0]), static_cast<unsigned char>(selectedColor[1]), static_cast<unsigned char>(selectedColor[2]), 255};
 }
 
+Color newFireColor() {
+    vector<array<int, 3>> colors = {
+        {255, 0, 0},      // Deep red
+        {255, 60, 0},     // Bright orange
+        {255, 120, 0}     // Brighter orange
+    };
+
+    int randomIndex = rand() % colors.size();
+    auto selectedColor = colors[randomIndex];
+    return (Color){static_cast<unsigned char>(selectedColor[0]), static_cast<unsigned char>(selectedColor[1]), static_cast<unsigned char>(selectedColor[2]), 255};
+}
+
+Color mediumFireColor() {
+    vector<array<int, 3>> colors = {
+        {255, 90, 0},     // Orange
+        {255, 154, 0},    // Yellow-orange
+        {255, 206, 0}     // Bright yellow
+    };
+
+    int randomIndex = rand() % colors.size();
+    auto selectedColor = colors[randomIndex];
+    return (Color){static_cast<unsigned char>(selectedColor[0]), static_cast<unsigned char>(selectedColor[1]), static_cast<unsigned char>(selectedColor[2]), 255};
+}
+
+Color oldFireColor() {
+    vector<array<int, 3>> colors = {
+        {255, 232, 8},    // Light yellow
+        {255, 240, 60},   // Pale yellow
+        {255, 245, 120}   // Very light yellow
+    };
+
+    int randomIndex = rand() % colors.size();
+    auto selectedColor = colors[randomIndex];
+    return (Color){static_cast<unsigned char>(selectedColor[0]), static_cast<unsigned char>(selectedColor[1]), static_cast<unsigned char>(selectedColor[2]), 255};
+}
+
+Color smokeColor() {
+    vector<array<int, 3>> colors = {
+        {24, 24, 24},  
+        
+    };
+
+    int randomIndex = rand() % colors.size();
+    auto selectedColor = colors[randomIndex];
+    return (Color){static_cast<unsigned char>(selectedColor[0]), static_cast<unsigned char>(selectedColor[1]), static_cast<unsigned char>(selectedColor[2]), 255};
+}
+
 void updateStone(Particle grid[gridWidth][gridHeight]) {
     for (int x = 0; x < gridWidth; x++) {
         for (int y = gridHeight - 2; y >= 0; y--) {
@@ -181,7 +229,6 @@ void updateStone(Particle grid[gridWidth][gridHeight]) {
         }
     }
 }
-
 
 void updateSand(Particle grid[gridWidth][gridHeight]) {
     for (int x = 0; x < gridWidth; x++) {
@@ -240,7 +287,6 @@ void updateSand(Particle grid[gridWidth][gridHeight]) {
     }
 }
 
-
 void updateWetSand(Particle grid[gridWidth][gridHeight]) {
     for (int x = 0; x < gridWidth; x++) {
         for (int y = gridHeight - 2; y >= 0; y--) {
@@ -287,7 +333,6 @@ void updateWetSand(Particle grid[gridWidth][gridHeight]) {
         }
     }
 }
-
 
 void updateWater(Particle grid[gridWidth][gridHeight]) {
     for (int x = 0; x < gridWidth; x++) {
@@ -490,16 +535,91 @@ void updatePlant(Particle grid[gridWidth][gridHeight]) {
                 grid[x][y - 1].state = -1;
             }
             
-            
-            odd = rand() % 2 + 1;
-            int tmp = 0;
-            if (odd == 2) tmp = maxLife;
             if (grid[x][y].life > 5 && grid[x][y].life < maxLife && grid[x][y - 1].state == -1) {
-                grid[x][y - 1] = {6, plantColor(), 0, tmp};
+                grid[x][y - 1] = {6, plantColor(), 0, rand() % 9 + 6};
             }
         }
     }
 }
+
+void updateFire(Particle grid[gridWidth][gridHeight]) {
+    const int dx[] = {-1, 1, 0, 0, -1, -1, 1, 1, -2, 2, 0, 0, -2, -2, 2, 2}; // Direction vectors for x, including two steps
+    const int dy[] = {0, 0, -1, 1, -1, 1, -1, 1, 0, 0, -2, 2, -2, 2, -2, 2}; // Direction vectors for y, including two steps
+    const int spreadChance = 5; // Chance of fire spreading to adjacent plant
+    const int maxLifeAir = 20; // Max life of fire in air
+    const int maxLifePlant = 250; // Max life of fire on plant
+
+    for (int x = 0; x < gridWidth; x++) {
+        for (int y = 0; y < gridHeight; y++) {
+            if (grid[x][y].state != 8) continue; // Continue if not a fire particle
+
+            // Determine max life based on whether the fire is on a plant or in empty space
+            int maxLife = (grid[x][y + 1].state == 6) ? maxLifePlant : maxLifeAir;
+
+            grid[x][y].life++;
+            if (grid[x][y].life > maxLife) {
+                grid[x][y] = {-1, BLACK, 0, 0}; // Convert to air after max life
+                continue;
+            }
+
+            // Color change logic based on life span
+            if (grid[x][y].life <= maxLife / 3) grid[x][y].color = newFireColor();
+            else if (grid[x][y].life <= 2 * maxLife / 3) grid[x][y].color = mediumFireColor();
+            else grid[x][y].color = oldFireColor();
+
+            // Spread fire logic
+            for (int direction = 0; direction < 16; direction++) { // Updated to check all 16 directions
+                int nx = x + dx[direction];
+                int ny = y + dy[direction];
+
+                if (nx >= 0 && nx < gridWidth && ny >= 0 && ny < gridHeight) {
+                    if (grid[nx][ny].state == 6 && rand() % 100 < spreadChance) { // If adjacent to a plant
+                        grid[nx][ny] = {8, newFireColor(), 0, 0}; // Create new fire particle
+                    }
+                }
+            }
+
+            // Smoke generation logic if above the fire is empty
+            if (y > 0 && grid[x][y - 1].state == -1 && rand() % 100 < 10) {
+                grid[x][y - 1] = {9, smokeColor(), 0, rand() % 80 + 1}; // Generate smoke
+            }
+        }
+    }
+}
+
+
+void updateSmoke(Particle grid[gridWidth][gridHeight]) {
+    const int maxLife = 100; // Max life before turning to black
+
+    for (int x = 0; x < gridWidth; x++) {
+        for (int y = 0; y < gridHeight; y++) {
+            if (grid[x][y].state != 9) continue;
+
+            grid[x][y].life++;
+            if (grid[x][y].life > maxLife) {
+                grid[x][y] = {-1, BLACK, 0, 0};
+                continue;
+            }
+
+            // Prevent smoke from moving up if it's at the top of the grid
+            if (y > 0 && grid[x][y - 1].state == -1) {
+                grid[x][y - 1] = grid[x][y];
+                grid[x][y] = {-1, BLACK, 0, 0};
+            }
+            else if (y > 0 && grid[x][y - 1].state != -1) {
+                if (dir() == "LEFT" && x > 0 && y > 0 && grid[x - 1][y - 1].state == -1) {
+                    grid[x - 1][y - 1] = grid[x][y]; // Move smoke up left
+                    grid[x][y].state = -1; 
+                }
+                else if (dir() == "RIGHT" && x < gridWidth - 1 && y > 0 && grid[x + 1][y - 1].state == -1) {
+                    grid[x + 1][y - 1] = grid[x][y]; // Move smoke up right
+                    grid[x][y].state = -1; 
+                }
+            }
+        }
+    }
+}
+
 
 
 void mouseDrag(Particle grid[gridWidth][gridHeight]) {
@@ -523,6 +643,9 @@ void mouseDrag(Particle grid[gridWidth][gridHeight]) {
                 break;
             case ELEMENT_DIRT:
                 particle = {5, dirtColor()};
+                break;
+            case ELEMENT_FIRE:
+                particle = {8, newFireColor(), 0, 0};
                 break;
             default:
                 return;
@@ -601,6 +724,8 @@ void updateSimulation() {
     updateDirt(currentGrid);
     updatePlant(currentGrid);
     updateWetDirt(currentGrid);
+    updateFire(currentGrid);
+    updateSmoke(currentGrid);
 
     for (int x = 0; x < gridWidth; x++) {
         for (int y = 0; y < gridHeight; y++) {
@@ -658,6 +783,10 @@ int main() {
 
         if (GuiButton((Rectangle){460, 10, 80, 30}, "DIRT")) {
             currentElement = (currentElement == ELEMENT_DIRT) ? ELEMENT_NONE : ELEMENT_DIRT;
+        }
+
+        if (GuiButton((Rectangle){550, 10, 80, 30}, "FIRE")) {
+            currentElement = (currentElement == ELEMENT_FIRE) ? ELEMENT_NONE : ELEMENT_FIRE;
         }
 
         mouseDrag(currentGrid);
