@@ -23,7 +23,7 @@ const int viscosity = 8; // for liquids only
 const int frequency = 15;
 
 struct Particle {
-    int state; // -1:empty, 0:stone, 1:sand, 2:water, 3:wet sand, 4:suspended stone, 5:dirt, 6:plant, 7:wet dirt, 8:fire, 9:smoke
+    int state; // -1:empty, 0:stone, 1:sand, 2:water, 3:wet sand, 4:suspended stone, 5:dirt, 6:plant, 7:wet dirt, 8:fire, 9:smoke, 10:coal
     Color color;
     int velocity;
     int life;
@@ -38,6 +38,7 @@ enum ElementType {
     ELEMENT_SUSPENDED_STONE,
     ELEMENT_DIRT,
     ELEMENT_FIRE,
+    ELEMENT_COAL,
 };
 
 ElementType currentElement = ELEMENT_NONE;
@@ -197,6 +198,23 @@ Color oldFireColor() {
 Color smokeColor() {
     vector<array<int, 3>> colors = {
         {24, 24, 24},  
+        
+    };
+
+    int randomIndex = rand() % colors.size();
+    auto selectedColor = colors[randomIndex];
+    return (Color){static_cast<unsigned char>(selectedColor[0]), static_cast<unsigned char>(selectedColor[1]), static_cast<unsigned char>(selectedColor[2]), 255};
+}
+
+Color coalColor() {
+    vector<array<int, 3>> colors = {
+        {21, 23, 22}, // Original color
+        {19, 21, 20}, // Slightly darker
+        {23, 25, 24}, // Slightly lighter
+        {20, 22, 21}, // Very subtle dark variation
+        {22, 24, 23}, // Very subtle light variation
+        {18, 20, 19}, // Darker still
+        {24, 26, 25}  // Lighter still 
         
     };
 
@@ -551,9 +569,8 @@ void updateFire(Particle grid[gridWidth][gridHeight]) {
 
     for (int x = 0; x < gridWidth; x++) {
         for (int y = 0; y < gridHeight; y++) {
-            if (grid[x][y].state != 8) continue; // Continue if not a fire particle
+            if (grid[x][y].state != 8) continue;
 
-            // Determine max life based on whether the fire is on a plant or in empty space
             int maxLife = (grid[x][y + 1].state == 6) ? maxLifePlant : maxLifeAir;
 
             grid[x][y].life++;
@@ -568,28 +585,26 @@ void updateFire(Particle grid[gridWidth][gridHeight]) {
             else grid[x][y].color = oldFireColor();
 
             // Spread fire logic
-            for (int direction = 0; direction < 16; direction++) { // Updated to check all 16 directions
+            for (int direction = 0; direction < 16; direction++) { 
                 int nx = x + dx[direction];
                 int ny = y + dy[direction];
 
                 if (nx >= 0 && nx < gridWidth && ny >= 0 && ny < gridHeight) {
                     if (grid[nx][ny].state == 6 && rand() % 100 < spreadChance) { // If adjacent to a plant
-                        grid[nx][ny] = {8, newFireColor(), 0, 0}; // Create new fire particle
+                        grid[nx][ny] = {8, newFireColor(), 0, 0};
                     }
                 }
             }
 
-            // Smoke generation logic if above the fire is empty
             if (y > 0 && grid[x][y - 1].state == -1 && rand() % 100 < 10) {
-                grid[x][y - 1] = {9, smokeColor(), 0, rand() % 80 + 1}; // Generate smoke
+                grid[x][y - 1] = {9, smokeColor(), 0, rand() % 80 + 1};
             }
         }
     }
 }
 
-
 void updateSmoke(Particle grid[gridWidth][gridHeight]) {
-    const int maxLife = 100; // Max life before turning to black
+    const int maxLife = 100;
 
     for (int x = 0; x < gridWidth; x++) {
         for (int y = 0; y < gridHeight; y++) {
@@ -601,7 +616,6 @@ void updateSmoke(Particle grid[gridWidth][gridHeight]) {
                 continue;
             }
 
-            // Prevent smoke from moving up if it's at the top of the grid
             if (y > 0 && grid[x][y - 1].state == -1) {
                 grid[x][y - 1] = grid[x][y];
                 grid[x][y] = {-1, BLACK, 0, 0};
@@ -620,7 +634,51 @@ void updateSmoke(Particle grid[gridWidth][gridHeight]) {
     }
 }
 
+void updateCoal(Particle grid[gridWidth][gridHeight]) {
+    for (int x = 0; x < gridWidth; x++) {
+        for (int y = gridHeight - 2; y >= 0; y--) {
+            if (grid[x][y].state != 10) continue;
+            
+            if (grid[x][y + 1].state == -1) { // If there's space below
+                int tmp = 0;
+                for (int i = 1; i <= gravity; i++) {
+                    if (grid[x][y + i].state == -1 && y + i < gridHeight ) {
+                        tmp = i;
+                    }
+                }
+                grid[x][y + tmp] = grid[x][y];
+                grid[x][y].state = -1;
+            }
+            else if ((grid[x][y + 1].state != -1 || grid[x][y + 1].state != 2) && rand() % 100 < 10) {
 
+                if (dir() == "LEFT" && x > 0 && grid[x - 1][y + 1].state == -1) {
+                    grid[x - 1][y + 1] = grid[x][y]; // Move coal down left
+                    grid[x][y].state = -1; 
+                }
+                else if (dir() == "LEFT" && x > 0 && grid[x - 1][y + 1].state == 2) {
+                    Particle tmp = grid[x - 1][y + 1];
+                    grid[x - 1][y + 1] = grid[x][y]; // swap coal down left
+                    grid[x][y] = tmp;
+                }
+                else if (dir() == "RIGHT" && x < gridWidth - 1 && grid[x + 1][y + 1].state == -1) {
+                    grid[x + 1][y + 1] = grid[x][y]; // Move coal down right
+                    grid[x][y].state = -1; 
+                }
+                else if (dir() == "RIGHT" && x < gridWidth - 1 && grid[x + 1][y + 1].state == 2) {
+                    Particle tmp = grid[x + 1][y + 1];
+                    grid[x + 1][y + 1] = grid[x][y]; // swap coal down right
+                    grid[x][y] = tmp;
+                }
+            }
+
+            if (grid[x][y + 1].state == 2) {
+                Particle tmp = grid[x][y];
+                grid[x][y] = grid[x][y + 1];
+                grid[x][y + 1] = tmp;
+            }
+        }
+    }
+}
 
 void mouseDrag(Particle grid[gridWidth][gridHeight]) {
     if (IsMouseButtonDown(MOUSE_LEFT_BUTTON)) {
@@ -646,6 +704,9 @@ void mouseDrag(Particle grid[gridWidth][gridHeight]) {
                 break;
             case ELEMENT_FIRE:
                 particle = {8, newFireColor(), 0, 0};
+                break;
+            case ELEMENT_COAL:
+                particle = {10, coalColor(), 0, 0};
                 break;
             default:
                 return;
@@ -726,6 +787,7 @@ void updateSimulation() {
     updateWetDirt(currentGrid);
     updateFire(currentGrid);
     updateSmoke(currentGrid);
+    updateCoal(currentGrid);
 
     for (int x = 0; x < gridWidth; x++) {
         for (int y = 0; y < gridHeight; y++) {
@@ -787,6 +849,10 @@ int main() {
 
         if (GuiButton((Rectangle){550, 10, 80, 30}, "FIRE")) {
             currentElement = (currentElement == ELEMENT_FIRE) ? ELEMENT_NONE : ELEMENT_FIRE;
+        }
+
+        if (GuiButton((Rectangle){640, 10, 80, 30}, "COAL")) {
+            currentElement = (currentElement == ELEMENT_COAL) ? ELEMENT_NONE : ELEMENT_COAL;
         }
 
         mouseDrag(currentGrid);
