@@ -12,13 +12,13 @@
 
 using namespace std;
 
-const int screenWidth = 2000;
-const int screenHeight = 1600;
-const int pixelSize = 8; // min 2
+const int screenWidth = 1000;
+const int screenHeight = 800;
+const int pixelSize = 4; // min 2
 const int gridWidth = screenWidth / pixelSize;
 const int gridHeight = screenHeight / pixelSize;
 const int mouseGrid = 10;
-const float gravity = 4;
+const float gravity = 2;
 const int viscosity = 8; // for liquids only
 const int frequency = 15;
 
@@ -563,45 +563,68 @@ void updatePlant(Particle grid[gridWidth][gridHeight]) {
 void updateFire(Particle grid[gridWidth][gridHeight]) {
     const int dx[] = {-1, 1, 0, 0, -1, -1, 1, 1, -2, 2, 0, 0, -2, -2, 2, 2}; // Direction vectors for x, including two steps
     const int dy[] = {0, 0, -1, 1, -1, 1, -1, 1, 0, 0, -2, 2, -2, 2, -2, 2}; // Direction vectors for y, including two steps
-    const int spreadChance = 5; // Chance of fire spreading to adjacent plant
+    const int spreadChance = 5; // Chance of fire spreading to adjacent plants
     const int maxLifeAir = 20; // Max life of fire in air
-    const int maxLifePlant = 250; // Max life of fire on plant
+    const int maxLifePlant = 50; // Max life of fire on plant
 
     for (int x = 0; x < gridWidth; x++) {
         for (int y = 0; y < gridHeight; y++) {
-            if (grid[x][y].state != 8) continue;
+            if (grid[x][y].state != 8) continue; // Process only fire particles
 
-            int maxLife = (grid[x][y + 1].state == 6) ? maxLifePlant : maxLifeAir;
+            bool isOnCoal = (grid[x][y + 1].state == 10); // Check if fire is directly on coal
 
+            // Increment life of fire but prevent it from dying if on coal
             grid[x][y].life++;
-            if (grid[x][y].life > maxLife) {
-                grid[x][y] = {-1, BLACK, 0, 0}; // Convert to air after max life
+            if (!isOnCoal && (grid[x][y].life > maxLifeAir || (grid[x][y + 1].state == 6 && grid[x][y].life > maxLifePlant))) {
+                grid[x][y] = {-1, BLACK, 0, 0}; // Extinguish fire
                 continue;
             }
 
-            // Color change logic based on life span
-            if (grid[x][y].life <= maxLife / 3) grid[x][y].color = newFireColor();
-            else if (grid[x][y].life <= 2 * maxLife / 3) grid[x][y].color = mediumFireColor();
-            else grid[x][y].color = oldFireColor();
+            // Update color based on life (if not on coal)
+            if (!isOnCoal) {
+                if (grid[x][y].life <= maxLifeAir / 3 || (grid[x][y + 1].state == 6 && grid[x][y].life <= maxLifePlant / 3)) {
+                    grid[x][y].color = newFireColor();
+                } else if (grid[x][y].life <= 2 * maxLifeAir / 3 || (grid[x][y + 1].state == 6 && grid[x][y].life <= 2 * maxLifePlant / 3)) {
+                    grid[x][y].color = mediumFireColor();
+                } else {
+                    grid[x][y].color = oldFireColor();
+                }
+            }
 
-            // Spread fire logic
-            for (int direction = 0; direction < 16; direction++) { 
-                int nx = x + dx[direction];
-                int ny = y + dy[direction];
+            // When on coal, spread fire towards y - 4 in every direction
+            if (isOnCoal) {
+                for (int direction = 0; direction < 16; direction++) {
+                    int targetY = y - 4;
+                    if (targetY < 0) continue; // Skip if target is outside bounds
 
-                if (nx >= 0 && nx < gridWidth && ny >= 0 && ny < gridHeight) {
-                    if (grid[nx][ny].state == 6 && rand() % 100 < spreadChance) { // If adjacent to a plant
+                    int nx = x + dx[direction];
+                    int ny = targetY + dy[direction];
+
+                    if (nx >= 0 && nx < gridWidth && ny >= 0 && ny < gridHeight && grid[nx][ny].state == -1) {
+                        grid[nx][ny] = {8, newFireColor(), 0, 0}; // Spread fire
+                    }
+                }
+            } else {
+                // Normal fire spreading logic for non-coal surfaces
+                for (int direction = 0; direction < 16; direction++) {
+                    int nx = x + dx[direction];
+                    int ny = y + dy[direction];
+
+                    if (nx >= 0 && nx < gridWidth && ny >= 0 && ny < gridHeight && grid[nx][ny].state == -1 && rand() % 100 < spreadChance) {
                         grid[nx][ny] = {8, newFireColor(), 0, 0};
                     }
                 }
             }
 
+            // Generate smoke logic remains the same
             if (y > 0 && grid[x][y - 1].state == -1 && rand() % 100 < 10) {
                 grid[x][y - 1] = {9, smokeColor(), 0, rand() % 80 + 1};
             }
         }
     }
 }
+
+
 
 void updateSmoke(Particle grid[gridWidth][gridHeight]) {
     const int maxLife = 100;
@@ -685,22 +708,22 @@ void mouseDrag(Particle grid[gridWidth][gridHeight]) {
         Particle particle;
         switch (currentElement) {
             case ELEMENT_ERASE:
-                particle = {-1, BLACK};
+                particle = {-1, BLACK, 0, 0};
                 break;
             case ELEMENT_STONE:
-                particle = {0, stoneColor()};
+                particle = {0, stoneColor(), 0, 0};
                 break;
             case ELEMENT_SAND:
-                particle = {1, sandColor(), 0}; ///////////////////////////////////////////////////////////////////////////
+                particle = {1, sandColor(), 0, 0}; ///////////////////////////////////////////////////////////////////////////
                 break;
             case ELEMENT_WATER:
-                particle = {2, waterColor()};
+                particle = {2, waterColor(), 0, 0};
                 break;
             case ELEMENT_SUSPENDED_STONE:
-                particle = {4, stoneColor()};
+                particle = {4, stoneColor(), 0, 0};
                 break;
             case ELEMENT_DIRT:
-                particle = {5, dirtColor()};
+                particle = {5, dirtColor(), 0, 0};
                 break;
             case ELEMENT_FIRE:
                 particle = {8, newFireColor(), 0, 0};
