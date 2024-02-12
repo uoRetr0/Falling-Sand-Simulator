@@ -227,6 +227,11 @@ void updateStone(Particle grid[gridWidth][gridHeight]) {
     for (int x = 0; x < gridWidth; x++) {
         for (int y = gridHeight - 2; y >= 0; y--) {
             if (grid[x][y].state != 0) continue;
+
+            if (grid[x][y + 1].state == 8 || grid[x][y + 1].state == 9) {
+                grid[x][y + 1] = grid[x][y];
+                grid[x][y] = {-1, BLACK, 0, 0};
+            }
             
             if (grid[x][y].state == 0 && grid[x][y + 1].state == -1) { // If there's space below
                 int tmp = 0;
@@ -264,6 +269,11 @@ void updateSand(Particle grid[gridWidth][gridHeight]) {
             }
             else if (grid[x][y + 1].state == 2) {
                 grid[x][y] = {3, wetSandColor(), 0, 1};
+            }
+            
+            if (grid[x][y + 1].state == 8 || grid[x][y + 1].state == 9) {
+                grid[x][y + 1] = grid[x][y];
+                grid[x][y] = {-1, BLACK, 0, 0};
             }
 
             if (grid[x][y].state == 1 && grid[x][y + 1].state == -1) { // If there's space below
@@ -360,6 +370,12 @@ void updateWater(Particle grid[gridWidth][gridHeight]) {
             bool movedDown = false;
             string side = dir();
 
+            if (grid[x][y + 1].state == 8 || grid[x][y + 1].state == 9) {
+                grid[x][y + 1] = grid[x][y];
+                grid[x][y] = {-1, BLACK, 0, 0};
+                movedDown = true;
+            }
+
             if (grid[x][y].state == 2 && grid[x][y + 1].state == -1) { // If there's space below
                 
                 int tmp = 0;
@@ -440,6 +456,11 @@ void updateDirt(Particle grid[gridWidth][gridHeight]) {
 
             if (grid[x][y + 1].state == 2) {
                 grid[x][y] = {7, wetDirtColor(), 0, 0};
+            }
+
+            if (grid[x][y + 1].state == 8 || grid[x][y + 1].state == 9) {
+                grid[x][y + 1] = grid[x][y];
+                grid[x][y] = {-1, BLACK, 0, 0};
             }
 
             if (grid[x][y].state == 5 && grid[x][y + 1].state == -1) { // If there's space below
@@ -561,26 +582,23 @@ void updatePlant(Particle grid[gridWidth][gridHeight]) {
 }
 
 void updateFire(Particle grid[gridWidth][gridHeight]) {
-    const int dx[] = {-1, 1, 0, 0, -1, -1, 1, 1, -2, 2, 0, 0, -2, -2, 2, 2}; // Direction vectors for x, including two steps
-    const int dy[] = {0, 0, -1, 1, -1, 1, -1, 1, 0, 0, -2, 2, -2, 2, -2, 2}; // Direction vectors for y, including two steps
-    const int spreadChance = 5; // Chance of fire spreading to adjacent plants
-    const int maxLifeAir = 20; // Max life of fire in air
-    const int maxLifePlant = 50; // Max life of fire on plant
+    const int dx[] = {-1, 1, 0, 0, -1, -1, 1, 1, -2, 2, 0, 0, -2, -2, 2, 2}; 
+    const int dy[] = {0, 0, -1, 1, -1, 1, -1, 1, 0, 0, -2, 2, -2, 2, -2, 2}; 
+    const int spreadChance = 5; 
+    const int maxLifeAir = 20; 
+    const int maxLifePlant = 50; 
 
     for (int x = 0; x < gridWidth; x++) {
         for (int y = 0; y < gridHeight; y++) {
-            if (grid[x][y].state != 8) continue; // Process only fire particles
+            if (grid[x][y].state != 8) continue; 
 
-            bool isOnCoal = (grid[x][y + 1].state == 10); // Check if fire is directly on coal
-
-            // Increment life of fire but prevent it from dying if on coal
+            bool isOnCoal = (grid[x][y + 1].state == 10);
             grid[x][y].life++;
             if (!isOnCoal && (grid[x][y].life > maxLifeAir || (grid[x][y + 1].state == 6 && grid[x][y].life > maxLifePlant))) {
-                grid[x][y] = {-1, BLACK, 0, 0}; // Extinguish fire
+                grid[x][y] = {-1, BLACK, 0, 0};
                 continue;
             }
 
-            // Update color based on life (if not on coal)
             if (!isOnCoal) {
                 if (grid[x][y].life <= maxLifeAir / 3 || (grid[x][y + 1].state == 6 && grid[x][y].life <= maxLifePlant / 3)) {
                     grid[x][y].color = newFireColor();
@@ -591,40 +609,42 @@ void updateFire(Particle grid[gridWidth][gridHeight]) {
                 }
             }
 
-            // When on coal, spread fire towards y - 4 in every direction
-            if (isOnCoal) {
-                for (int direction = 0; direction < 16; direction++) {
-                    int targetY = y - 4;
-                    if (targetY < 0) continue; // Skip if target is outside bounds
+            for (int direction = 0; direction < 16; direction++) {
+                int nx = x + dx[direction];
+                int ny = y + dy[direction];
 
-                    int nx = x + dx[direction];
-                    int ny = targetY + dy[direction];
-
-                    if (nx >= 0 && nx < gridWidth && ny >= 0 && ny < gridHeight && grid[nx][ny].state == -1) {
-                        grid[nx][ny] = {8, newFireColor(), 0, 0}; // Spread fire
-                    }
+                if (nx >= 0 && nx < gridWidth && ny >= 0 && ny < gridHeight && (grid[nx][ny].state == 6) && rand() % 100 < spreadChance) {                    
+                    grid[nx][ny] = {8, newFireColor(), 0, 0};
                 }
-            } else {
-                // Normal fire spreading logic for non-coal surfaces
-                for (int direction = 0; direction < 16; direction++) {
-                    int nx = x + dx[direction];
-                    int ny = y + dy[direction];
+            }
 
-                    if (nx >= 0 && nx < gridWidth && ny >= 0 && ny < gridHeight && grid[nx][ny].state == -1 && rand() % 100 < spreadChance) {
-                        grid[nx][ny] = {8, newFireColor(), 0, 0};
+            
+            if (isOnCoal && (grid[x][y - 1].state == -1 || grid[x][y - 1].state == 8)) {
+                int maxHeight = rand() % 5 + 2; 
+                for (int offset = 1; offset <= maxHeight; offset++) { 
+                    int targetY = y - offset;
+                    // Randomly decide direction: straight up, up-right, or up-left
+                    int direction = rand() % 3; // 0: Up, 1: Up-Right, 2: Up-Left
+                    int targetX = x; // Default to straight up
+
+                    if (direction == 1 && x < gridWidth - 1) { // Move up-right if not at right edge
+                        targetX = x + 1;
+                    } else if (direction == 2 && x > 0) { // Move up-left if not at left edge
+                        targetX = x - 1;
+                    }
+
+                    if (targetY >= 0 && grid[targetX][targetY].state == -1 && rand() % 100 < 15) { 
+                        grid[targetX][targetY] = {8, newFireColor(), 0, 0}; 
                     }
                 }
             }
 
-            // Generate smoke logic remains the same
             if (y > 0 && grid[x][y - 1].state == -1 && rand() % 100 < 10) {
                 grid[x][y - 1] = {9, smokeColor(), 0, rand() % 80 + 1};
             }
         }
     }
 }
-
-
 
 void updateSmoke(Particle grid[gridWidth][gridHeight]) {
     const int maxLife = 100;
