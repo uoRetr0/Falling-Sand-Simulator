@@ -195,17 +195,6 @@ Color oldFireColor() {
     return (Color){static_cast<unsigned char>(selectedColor[0]), static_cast<unsigned char>(selectedColor[1]), static_cast<unsigned char>(selectedColor[2]), 255};
 }
 
-Color smokeColor() {
-    vector<array<int, 3>> colors = {
-        {24, 24, 24},  
-        
-    };
-
-    int randomIndex = rand() % colors.size();
-    auto selectedColor = colors[randomIndex];
-    return (Color){static_cast<unsigned char>(selectedColor[0]), static_cast<unsigned char>(selectedColor[1]), static_cast<unsigned char>(selectedColor[2]), 255};
-}
-
 Color coalColor() {
     vector<array<int, 3>> colors = {
         {21, 23, 22}, // Original color
@@ -640,7 +629,7 @@ void updateFire(Particle grid[gridWidth][gridHeight]) {
             }
             
             if (y > 0 && grid[x][y - 1].state == -1 && rand() % 100 < 10) {
-                grid[x][y - 1] = {9, smokeColor(), 0, rand() % 80 + 1};
+                grid[x][y - 1] = {9, {24, 24, 24, 255}, 0, rand() % 80 + 1};
             }
         }
     }
