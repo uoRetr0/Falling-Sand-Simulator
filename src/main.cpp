@@ -912,6 +912,29 @@ int main() {
         }
 
         mouseDrag(currentGrid);
+
+        // Draw mouse grid preview edges
+        Vector2 mousePosition = GetMousePosition();
+        int gridMouseX = static_cast<int>(mousePosition.x) / pixelSize;
+        int gridMouseY = static_cast<int>(mousePosition.y) / pixelSize;
+        int halfSize = mouseGrid / 2; // Assuming mouseGrid is an odd number for a centered square. Adjust if necessary.
+
+        // Adjust for even mouseGrid sizes
+        int offsetX = (mouseGrid % 2 == 0) ? pixelSize : 0;
+        int offsetY = (mouseGrid % 2 == 0) ? pixelSize : 0;
+
+        // Calculate the top-left corner of the grid area
+        int topLeftX = (gridMouseX - halfSize) * pixelSize;
+        int topLeftY = (gridMouseY - halfSize) * pixelSize;
+
+        // Calculate the width and height of the grid area
+        int width = mouseGrid * pixelSize + offsetX;
+        int height = mouseGrid * pixelSize + offsetY;
+
+        // Draw the perimeter
+        DrawRectangleLines(topLeftX, topLeftY, width, height, RED);
+
+
         EndDrawing();
     }
 
