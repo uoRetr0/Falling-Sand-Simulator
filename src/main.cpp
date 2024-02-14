@@ -848,8 +848,10 @@ int main() {
     initializeGrids();
 
 
-    float mouseGridFloat = static_cast<float>(mouseGrid); // Sync at start
+    float mouseGridFloat = static_cast<float>(mouseGrid);
     float frequencyFloat = static_cast<float>(frequency);
+    bool showMouseGridPreview = true; // Initially set to true to show the preview
+
 
 
     while (!WindowShouldClose()) {
@@ -872,6 +874,10 @@ int main() {
 
         GuiSlider((Rectangle){270, 10, 120, 20}, "Frequency", TextFormat("%d", (int)frequencyFloat), &frequencyFloat, 1.0f, 100.0f);
         frequency = static_cast<int>(frequencyFloat);
+
+        if (GuiToggle((Rectangle){screenWidth - 220, 10, 100, 30}, "Grid Preview", &showMouseGridPreview)) {
+            showMouseGridPreview = !showMouseGridPreview;
+        }
 
         if (GuiButton((Rectangle){screenWidth - 110, 10, 100, 30}, "CLEAR")) {
             clear(currentGrid);
@@ -911,28 +917,29 @@ int main() {
 
         mouseDrag(currentGrid);
 
-        // Draw mouse grid preview edges
-        Vector2 mousePosition = GetMousePosition();
-        int gridMouseX = static_cast<int>(mousePosition.x) / pixelSize;
-        int gridMouseY = static_cast<int>(mousePosition.y) / pixelSize;
-        int halfSize = mouseGrid / 2; // Assuming mouseGrid is an odd number for a centered square. Adjust if necessary.
+        if (showMouseGridPreview) {
+            // Draw mouse grid preview edges
+            Vector2 mousePosition = GetMousePosition();
+            int gridMouseX = static_cast<int>(mousePosition.x) / pixelSize;
+            int gridMouseY = static_cast<int>(mousePosition.y) / pixelSize;
+            int halfSize = mouseGrid / 2; // Assuming mouseGrid is an odd number for a centered square. Adjust if necessary.
 
-        // Adjust for even mouseGrid sizes
-        int offsetX = (mouseGrid % 2 == 0) ? pixelSize : 0;
-        int offsetY = (mouseGrid % 2 == 0) ? pixelSize : 0;
+            // Adjust for even mouseGrid sizes
+            int offsetX = (mouseGrid % 2 == 0) ? pixelSize : 0;
+            int offsetY = (mouseGrid % 2 == 0) ? pixelSize : 0;
 
-        // Calculate the top-left corner of the grid area
-        int topLeftX = (gridMouseX - halfSize) * pixelSize;
-        int topLeftY = (gridMouseY - halfSize) * pixelSize;
+            // Calculate the top-left corner of the grid area
+            int topLeftX = (gridMouseX - halfSize) * pixelSize;
+            int topLeftY = (gridMouseY - halfSize) * pixelSize;
 
-        // Calculate the width and height of the grid area
-        int width = mouseGrid * pixelSize + offsetX;
-        int height = mouseGrid * pixelSize + offsetY;
+            // Calculate the width and height of the grid area
+            int width = mouseGrid * pixelSize + offsetX;
+            int height = mouseGrid * pixelSize + offsetY;
 
-        // Draw the perimeter
-        DrawRectangleLines(topLeftX, topLeftY, width, height, RED);
-
-
+            // Draw the perimeter
+            DrawRectangleLines(topLeftX, topLeftY, width, height, RED);
+        }
+        
         EndDrawing();
     }
 
