@@ -27,6 +27,7 @@ struct Particle {
     Color color;
     int velocity;
     int life;
+    bool source;
 };
 
 enum ElementType {
@@ -614,13 +615,13 @@ void updateFire(Particle grid[gridWidth][gridHeight]) {
                 int ny = y + dy[direction];
 
                 if (nx >= 0 && nx < gridWidth && ny >= 0 && ny < gridHeight && (grid[nx][ny].state == 6) && rand() % 100 < spreadChance) {                    
-                    grid[nx][ny] = {8, newFireColor(), 0, 0};
+                    grid[nx][ny] = {8, newFireColor(), 0, 0, true};
                 }
             }
 
-            
-            if (isOnCoal && (grid[x][y - 1].state == -1 || grid[x][y - 1].state == 8)) {
-                int maxHeight = rand() % 5 + 2; 
+
+            if (grid[x][y].source == true) {
+                int maxHeight = rand() % 7 + 2; 
                 for (int offset = 1; offset <= maxHeight; offset++) { 
                     int targetY = y - offset;
                     // Randomly decide direction: straight up, up-right, or up-left
@@ -634,11 +635,11 @@ void updateFire(Particle grid[gridWidth][gridHeight]) {
                     }
 
                     if (targetY >= 0 && grid[targetX][targetY].state == -1 && rand() % 100 < 15) { 
-                        grid[targetX][targetY] = {8, newFireColor(), 0, 0}; 
+                        grid[targetX][targetY] = {8, newFireColor(), 0, 0, false}; 
                     }
                 }
             }
-
+            
             if (y > 0 && grid[x][y - 1].state == -1 && rand() % 100 < 10) {
                 grid[x][y - 1] = {9, smokeColor(), 0, rand() % 80 + 1};
             }
@@ -746,7 +747,7 @@ void mouseDrag(Particle grid[gridWidth][gridHeight]) {
                 particle = {5, dirtColor(), 0, 0};
                 break;
             case ELEMENT_FIRE:
-                particle = {8, newFireColor(), 0, 0};
+                particle = {8, newFireColor(), 0, 0, true};
                 break;
             case ELEMENT_COAL:
                 particle = {10, coalColor(), 0, 0};
