@@ -5,7 +5,6 @@
 #include <cmath>
 #include <vector>
 #include <array>
-
 #define RAYGUI_IMPLEMENTATION
 #include "raygui.h"
 
@@ -17,12 +16,10 @@ const int screenHeight = 800;
 const int pixelSize = 4; // min 2
 const int gridWidth = screenWidth / pixelSize;
 const int gridHeight = screenHeight / pixelSize;
-
-int mouseGrid = 10;
-
 const float gravity = 2;
 const int viscosity = 8; // for liquids only
-const int frequency = 15;
+int mouseGrid = 10;
+int frequency = 15;
 
 struct Particle {
     int state; // -1:empty, 0:stone, 1:sand, 2:water, 3:wet sand, 4:suspended stone, 5:dirt, 6:plant, 7:wet dirt, 8:fire, 9:smoke, 10:coal
@@ -852,6 +849,7 @@ int main() {
 
 
     float mouseGridFloat = static_cast<float>(mouseGrid); // Sync at start
+    float frequencyFloat = static_cast<float>(frequency);
 
 
     while (!WindowShouldClose()) {
@@ -869,11 +867,11 @@ int main() {
             }
         }
 
-        // Check the slider and update mouseGridFloat
         GuiSlider((Rectangle){70, 10, 120, 20}, "Brush Size", TextFormat("%d", (int)mouseGridFloat), &mouseGridFloat, 1.0f, 20.0f);
         mouseGrid = static_cast<int>(mouseGridFloat);
 
-
+        GuiSlider((Rectangle){270, 10, 120, 20}, "Frequency", TextFormat("%d", (int)frequencyFloat), &frequencyFloat, 1.0f, 100.0f);
+        frequency = static_cast<int>(frequencyFloat);
 
         if (GuiButton((Rectangle){screenWidth - 110, 10, 100, 30}, "CLEAR")) {
             clear(currentGrid);
