@@ -17,7 +17,9 @@ const int screenHeight = 800;
 const int pixelSize = 4; // min 2
 const int gridWidth = screenWidth / pixelSize;
 const int gridHeight = screenHeight / pixelSize;
-const int mouseGrid = 10;
+
+int mouseGrid = 10;
+
 const float gravity = 2;
 const int viscosity = 8; // for liquids only
 const int frequency = 15;
@@ -848,6 +850,10 @@ int main() {
 
     initializeGrids();
 
+
+    float mouseGridFloat = static_cast<float>(mouseGrid); // Sync at start
+
+
     while (!WindowShouldClose()) {
 
         updateSimulation();
@@ -863,39 +869,45 @@ int main() {
             }
         }
 
+        // Check the slider and update mouseGridFloat
+        GuiSlider((Rectangle){70, 10, 120, 20}, "Brush Size", TextFormat("%d", (int)mouseGridFloat), &mouseGridFloat, 1.0f, 20.0f);
+        mouseGrid = static_cast<int>(mouseGridFloat);
+
+
+
         if (GuiButton((Rectangle){screenWidth - 110, 10, 100, 30}, "CLEAR")) {
             clear(currentGrid);
         }
 
-        if (GuiButton((Rectangle){10, 10, 80, 30}, "ERASE")) {
+        if (GuiButton((Rectangle){screenWidth - 110, 50, 100, 30}, "ERASE")) {
             currentElement = (currentElement == ELEMENT_ERASE) ? ELEMENT_NONE : ELEMENT_ERASE;
         }  
 
-        if (GuiButton((Rectangle){100, 10, 80, 30}, "SAND")) {
+        if (GuiButton((Rectangle){10, 40, 80, 30}, "SAND")) {
             currentElement = (currentElement == ELEMENT_SAND) ? ELEMENT_NONE : ELEMENT_SAND;
         }
 
-        if (GuiButton((Rectangle){190, 10, 80, 30}, "WATER")) {
+        if (GuiButton((Rectangle){100, 40, 80, 30}, "WATER")) {
             currentElement = (currentElement == ELEMENT_WATER) ? ELEMENT_NONE : ELEMENT_WATER;
         }
 
-        if (GuiButton((Rectangle){280, 10, 80, 30}, "STONE")) {
+        if (GuiButton((Rectangle){190, 40, 80, 30}, "STONE")) {
             currentElement = (currentElement == ELEMENT_STONE) ? ELEMENT_NONE : ELEMENT_STONE;
         }
 
-        if (GuiButton((Rectangle){370, 10, 80, 30}, "SUS STONE")) {
+        if (GuiButton((Rectangle){280, 40, 80, 30}, "SUS STONE")) {
             currentElement = (currentElement == ELEMENT_SUSPENDED_STONE) ? ELEMENT_NONE : ELEMENT_SUSPENDED_STONE;
         }
 
-        if (GuiButton((Rectangle){460, 10, 80, 30}, "DIRT")) {
+        if (GuiButton((Rectangle){370, 40, 80, 30}, "DIRT")) {
             currentElement = (currentElement == ELEMENT_DIRT) ? ELEMENT_NONE : ELEMENT_DIRT;
         }
 
-        if (GuiButton((Rectangle){550, 10, 80, 30}, "FIRE")) {
+        if (GuiButton((Rectangle){460, 40, 80, 30}, "FIRE")) {
             currentElement = (currentElement == ELEMENT_FIRE) ? ELEMENT_NONE : ELEMENT_FIRE;
         }
 
-        if (GuiButton((Rectangle){640, 10, 80, 30}, "COAL")) {
+        if (GuiButton((Rectangle){550, 40, 80, 30}, "COAL")) {
             currentElement = (currentElement == ELEMENT_COAL) ? ELEMENT_NONE : ELEMENT_COAL;
         }
 
