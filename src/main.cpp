@@ -712,8 +712,44 @@ void updateCoal(Particle grid[gridWidth][gridHeight]) {
     }
 }
 
+bool isMouseOverGui() {
+    Rectangle brushSlider = {70, 10, 120, 20}; // Position and size of the "Brush Size" slider
+    Rectangle frequencySlider = {270, 10, 120, 20}; // Position and size of the "Frequency" slider
+    Rectangle gridPreviewToggle = {screenWidth - 220, 10, 100, 30}; // Position and size of the "Grid Preview" toggle
+    Rectangle clearButton = {screenWidth - 110, 10, 100, 30}; // Position and size of the "CLEAR" button
+    Rectangle eraseButton = {screenWidth - 110, 50, 100, 30}; // Position and size of the "ERASE" button
+    Rectangle sandButton = {10, 40, 80, 30}; // Position and size of the "SAND" button
+    Rectangle waterButton = {100, 40, 80, 30}; // Position and size of the "WATER" button   
+    Rectangle stoneButton = {190, 40, 80, 30}; // Position and size of the "STONE" button
+    Rectangle susStoneButton = {280, 40, 80, 30}; // Position and size of the "SUS STONE" button
+    Rectangle dirtButton = {370, 40, 80, 30}; // Position and size of the "DIRT" button
+    Rectangle fireButton = {460, 40, 80, 30}; // Position and size of the "FIRE" button
+    Rectangle coalButton = {550, 40, 80, 30}; // Position and size of the "COAL" button
+
+    Vector2 mousePoint = GetMousePosition();
+
+    // Check if the mouse is over any of the GUI elements
+    if (CheckCollisionPointRec(mousePoint, sandButton) ||
+        CheckCollisionPointRec(mousePoint, dirtButton) ||
+        CheckCollisionPointRec(mousePoint, waterButton) ||
+        CheckCollisionPointRec(mousePoint, stoneButton) ||
+        CheckCollisionPointRec(mousePoint, susStoneButton) ||
+        CheckCollisionPointRec(mousePoint, fireButton) ||
+        CheckCollisionPointRec(mousePoint, coalButton) ||
+        CheckCollisionPointRec(mousePoint, brushSlider) ||
+        CheckCollisionPointRec(mousePoint, frequencySlider) ||
+        CheckCollisionPointRec(mousePoint, gridPreviewToggle) ||
+        CheckCollisionPointRec(mousePoint, clearButton) ||
+        CheckCollisionPointRec(mousePoint, eraseButton)) {
+        return true;
+    }
+
+    return false; 
+}
+
+
 void mouseDrag(Particle grid[gridWidth][gridHeight]) {
-    if (IsMouseButtonDown(MOUSE_LEFT_BUTTON)) {
+    if (!isMouseOverGui() && IsMouseButtonDown(MOUSE_LEFT_BUTTON)) {
         Particle particle;
         switch (currentElement) {
             case ELEMENT_ERASE:
@@ -746,10 +782,8 @@ void mouseDrag(Particle grid[gridWidth][gridHeight]) {
 
         int mouseX = GetMouseX();
         int mouseY = GetMouseY();
-
         int extend = floor(mouseGrid / 2);
         
-
         for (int i = -extend; i <= extend; i++) {
             for (int j = -extend; j <= extend; j++) {
                 int gridX = (mouseX / pixelSize) + i;
@@ -836,12 +870,9 @@ int main() {
 
     initializeGrids();
 
-
     float mouseGridFloat = static_cast<float>(mouseGrid);
     float frequencyFloat = static_cast<float>(frequency);
     bool showMouseGridPreview = true; // Initially set to true to show the preview
-
-
 
     while (!WindowShouldClose()) {
 
