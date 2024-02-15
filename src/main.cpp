@@ -16,7 +16,7 @@ const int screenHeight = 800;
 const int pixelSize = 4; // min 2
 const int gridWidth = screenWidth / pixelSize;
 const int gridHeight = screenHeight / pixelSize;
-const float gravity = 2;
+const int gravity = 2; // const float gravity = 0.2f;
 const int viscosity = 8; // for liquids only
 int mouseGrid = 10;
 int frequency = 15;
@@ -24,7 +24,7 @@ int frequency = 15;
 struct Particle {
     int state; // -1:empty, 0:stone, 1:sand, 2:water, 3:wet sand, 4:suspended stone, 5:dirt, 6:plant, 7:wet dirt, 8:fire, 9:smoke, 10:coal
     Color color;
-    int velocity;
+    float velocity;
     int life;
     bool source;
 };
@@ -267,21 +267,30 @@ void updateSand(Particle grid[gridWidth][gridHeight]) {
 
             if (grid[x][y].state == 1 && grid[x][y + 1].state == -1) { // If there's space below
                 
+                // grid[x][y].velocity += gravity; // Accumulate velocity due to gravity
+
+                // // Calculate how far the particle should move based on its velocity
+                // int moveDistance = static_cast<int>(grid[x][y].velocity);
+
+                // if (moveDistance > 0) {
+                //     int newY = y + moveDistance; // Calculate the new Y position based on velocity
+                //     if (newY >= gridHeight) newY = gridHeight - 1; // Clamp within grid bounds
+
+                //     if (grid[x][newY].state == -1) { // Check if the new position is empty
+                //         grid[x][newY] = grid[x][y]; // Move the particle to the new position
+                //         grid[x][y] = {-1, BLACK, 0, 0}; // Reset the original position
+                //     }
+                //     else {
+                //         grid[x][y].velocity = 0; // Reset velocity if it can't move
+                //     }
+                // }
+
                 int tmp = 0;
                 for (int i = 1; i <= gravity; i++) {
                     if (grid[x][y + i].state == -1 && y + i < gridHeight ) {
                         tmp = i;
                     }
                 }
-
-                // grid[x][y].velocity += gravity;
-
-                // if (y + grid[x][y].velocity < gridHeight) {
-                //     grid[x][y + grid[x][y].velocity] = grid[x][y]; // Move sand down
-                // }
-
-                // grid[x][y].state = -1;
-
                 grid[x][y + tmp] = grid[x][y];
 
                 if (tmp != 0) {
