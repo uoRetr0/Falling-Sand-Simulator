@@ -937,7 +937,7 @@ int main() {
         GuiSlider((Rectangle){80, 80, 120, 20}, "FREQUENCY", TextFormat("%d", (int)frequencyFloat), &frequencyFloat, 1.0f, 100.0f);
         frequency = static_cast<int>(frequencyFloat);
 
-        if (GuiToggle((Rectangle){screenWidth - 220, 10, 100, 30}, "Grid Preview", &showMouseGridPreview)) {
+        if (GuiToggle((Rectangle){screenWidth - 220, 10, 100, 30}, "GRID", &showMouseGridPreview)) {
             showMouseGridPreview = !showMouseGridPreview;
         }
 
