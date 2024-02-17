@@ -11,8 +11,8 @@
 
 using namespace std;
 
-const int screenWidth = 1000;
-const int screenHeight = 800;
+const int screenWidth = 1728;
+const int screenHeight = 972;
 const int pixelSize = 4; // min 2
 const int gridWidth = screenWidth / pixelSize;
 const int gridHeight = screenHeight / pixelSize;
@@ -722,18 +722,19 @@ void updateCoal(Particle grid[gridWidth][gridHeight]) {
 }
 
 bool isMouseOverGui() {
-    Rectangle brushSlider = {70, 10, 120, 20}; // Position and size of the "Brush Size" slider
-    Rectangle frequencySlider = {270, 10, 120, 20}; // Position and size of the "Frequency" slider
+    Rectangle brushSlider = {80, 50, 120, 20}; // Position and size of the "Brush Size" slider
+    Rectangle frequencySlider = {80, 80, 120, 20}; // Position and size of the "Frequency" slider
     Rectangle gridPreviewToggle = {screenWidth - 220, 10, 100, 30}; // Position and size of the "Grid Preview" toggle
     Rectangle clearButton = {screenWidth - 110, 10, 100, 30}; // Position and size of the "CLEAR" button
     Rectangle eraseButton = {screenWidth - 110, 50, 100, 30}; // Position and size of the "ERASE" button
-    Rectangle sandButton = {10, 40, 80, 30}; // Position and size of the "SAND" button
-    Rectangle waterButton = {100, 40, 80, 30}; // Position and size of the "WATER" button   
-    Rectangle stoneButton = {190, 40, 80, 30}; // Position and size of the "STONE" button
+    Rectangle sandButton = {10, 10, 80, 30}; // Position and size of the "SAND" button
+    Rectangle waterButton = {100, 10, 80, 30}; // Position and size of the "WATER" button   
+    Rectangle stoneButton = {190, 10, 80, 30}; // Position and size of the "STONE" button
     Rectangle susStoneButton = {280, 40, 80, 30}; // Position and size of the "SUS STONE" button
-    Rectangle dirtButton = {370, 40, 80, 30}; // Position and size of the "DIRT" button
-    Rectangle fireButton = {460, 40, 80, 30}; // Position and size of the "FIRE" button
-    Rectangle coalButton = {550, 40, 80, 30}; // Position and size of the "COAL" button
+    Rectangle dirtButton = {370, 10, 80, 30}; // Position and size of the "DIRT" button
+    Rectangle fireButton = {460, 10, 80, 30}; // Position and size of the "FIRE" button
+    Rectangle coalButton = {550, 10, 80, 30}; // Position and size of the "COAL" button
+    Rectangle bgToggle = {screenWidth - 240, 50, 120, 30}; // Position and size of the "BG" toggle
 
     Vector2 mousePoint = GetMousePosition();
 
@@ -749,7 +750,8 @@ bool isMouseOverGui() {
         CheckCollisionPointRec(mousePoint, frequencySlider) ||
         CheckCollisionPointRec(mousePoint, gridPreviewToggle) ||
         CheckCollisionPointRec(mousePoint, clearButton) ||
-        CheckCollisionPointRec(mousePoint, eraseButton)) {
+        CheckCollisionPointRec(mousePoint, eraseButton) ||
+        CheckCollisionPointRec(mousePoint, bgToggle)) {
         return true;
     }
 
@@ -873,6 +875,9 @@ void updateSimulation() {
     applyUpdates();
 }
 
+
+
+
 int main() {
     InitWindow(screenWidth, screenHeight, "SAND SIMULATOR");
     SetTargetFPS(60);
@@ -881,15 +886,43 @@ int main() {
 
     float mouseGridFloat = static_cast<float>(mouseGrid);
     float frequencyFloat = static_cast<float>(frequency);
-    bool showMouseGridPreview = true; // Initially set to true to show the preview
+    bool showMouseGridPreview = true;
+
+    // Load frame images
+    Texture2D frames[4];
+    for (int i = 0; i < 4; i++) {
+        char fileName[32];
+        sprintf(fileName, "frames/frame%d.png", i);
+        frames[i] = LoadTexture(fileName);
+        if (frames[i].id == 0) {
+            TraceLog(LOG_ERROR, "Failed to load frame: %s", fileName);
+        }
+    }
+
+    bool animateBackground = false;
+    int currentFrame = 0;
+    double lastFrameChange = GetTime();
 
     while (!WindowShouldClose()) {
+        double currentTime = GetTime();
+
+        if (animateBackground && currentTime - lastFrameChange >= 1) { // Change ever 1 second
+            currentFrame = GetRandomValue(0, 3);
+            lastFrameChange = currentTime;
+        }
 
         updateSimulation();
         
         BeginDrawing();
-        ClearBackground(BLACK);
-        
+
+        // Draw the background first
+        if (animateBackground) {
+            DrawTexture(frames[currentFrame], 0, 0, WHITE);
+        } else {
+            ClearBackground(BLACK);
+        }
+
+        // Then draw the grid elements
         for (int i = 0; i < gridWidth; i++) {
             for (int j = 0; j < gridHeight; j++) {
                 if (currentGrid[i][j].state != -1) {
@@ -898,14 +931,18 @@ int main() {
             }
         }
 
-        GuiSlider((Rectangle){70, 10, 120, 20}, "Brush Size", TextFormat("%d", (int)mouseGridFloat), &mouseGridFloat, 1.0f, 20.0f);
+        GuiSlider((Rectangle){80, 50, 120, 20}, "BRUSH SIZE", TextFormat("%d", (int)mouseGridFloat), &mouseGridFloat, 1.0f, 20.0f);
         mouseGrid = static_cast<int>(mouseGridFloat);
 
-        GuiSlider((Rectangle){270, 10, 120, 20}, "Frequency", TextFormat("%d", (int)frequencyFloat), &frequencyFloat, 1.0f, 100.0f);
+        GuiSlider((Rectangle){80, 80, 120, 20}, "FREQUENCY", TextFormat("%d", (int)frequencyFloat), &frequencyFloat, 1.0f, 100.0f);
         frequency = static_cast<int>(frequencyFloat);
 
         if (GuiToggle((Rectangle){screenWidth - 220, 10, 100, 30}, "Grid Preview", &showMouseGridPreview)) {
             showMouseGridPreview = !showMouseGridPreview;
+        }
+
+        if (GuiToggle((Rectangle){screenWidth - 220, 50, 100, 30}, "STARS", &animateBackground)) {
+            animateBackground = !animateBackground;
         }
 
         if (GuiButton((Rectangle){screenWidth - 110, 10, 100, 30}, "CLEAR")) {
@@ -916,31 +953,31 @@ int main() {
             currentElement = (currentElement == ELEMENT_ERASE) ? ELEMENT_NONE : ELEMENT_ERASE;
         }  
 
-        if (GuiButton((Rectangle){10, 40, 80, 30}, "SAND")) {
+        if (GuiButton((Rectangle){10, 10, 80, 30}, "SAND")) {
             currentElement = (currentElement == ELEMENT_SAND) ? ELEMENT_NONE : ELEMENT_SAND;
         }
 
-        if (GuiButton((Rectangle){100, 40, 80, 30}, "WATER")) {
+        if (GuiButton((Rectangle){100, 10, 80, 30}, "WATER")) {
             currentElement = (currentElement == ELEMENT_WATER) ? ELEMENT_NONE : ELEMENT_WATER;
         }
 
-        if (GuiButton((Rectangle){190, 40, 80, 30}, "STONE")) {
+        if (GuiButton((Rectangle){190, 10, 80, 30}, "STONE")) {
             currentElement = (currentElement == ELEMENT_STONE) ? ELEMENT_NONE : ELEMENT_STONE;
         }
 
-        if (GuiButton((Rectangle){280, 40, 80, 30}, "SUS STONE")) {
+        if (GuiButton((Rectangle){280, 10, 80, 30}, "SUS STONE")) {
             currentElement = (currentElement == ELEMENT_SUSPENDED_STONE) ? ELEMENT_NONE : ELEMENT_SUSPENDED_STONE;
         }
 
-        if (GuiButton((Rectangle){370, 40, 80, 30}, "DIRT")) {
+        if (GuiButton((Rectangle){370, 10, 80, 30}, "DIRT")) {
             currentElement = (currentElement == ELEMENT_DIRT) ? ELEMENT_NONE : ELEMENT_DIRT;
         }
 
-        if (GuiButton((Rectangle){460, 40, 80, 30}, "FIRE")) {
+        if (GuiButton((Rectangle){460, 10, 80, 30}, "FIRE")) {
             currentElement = (currentElement == ELEMENT_FIRE) ? ELEMENT_NONE : ELEMENT_FIRE;
         }
 
-        if (GuiButton((Rectangle){550, 40, 80, 30}, "COAL")) {
+        if (GuiButton((Rectangle){550, 10, 80, 30}, "COAL")) {
             currentElement = (currentElement == ELEMENT_COAL) ? ELEMENT_NONE : ELEMENT_COAL;
         }
 
@@ -968,8 +1005,13 @@ int main() {
             // Draw the perimeter
             DrawRectangleLines(topLeftX, topLeftY, width, height, RED);
         }
-        
+
         EndDrawing();
+    }
+
+    // Cleanup code
+    for (int i = 0; i < 4; i++) {
+        UnloadTexture(frames[i]); // Don't forget to unload textures to avoid memory leaks
     }
 
     CloseWindow();
