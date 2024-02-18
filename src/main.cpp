@@ -730,7 +730,7 @@ bool isMouseOverGui() {
     Rectangle sandButton = {10, 10, 80, 30}; // Position and size of the "SAND" button
     Rectangle waterButton = {100, 10, 80, 30}; // Position and size of the "WATER" button   
     Rectangle stoneButton = {190, 10, 80, 30}; // Position and size of the "STONE" button
-    Rectangle susStoneButton = {280, 40, 80, 30}; // Position and size of the "SUS STONE" button
+    Rectangle susStoneButton = {280, 10, 80, 30}; // Position and size of the "SUS STONE" button
     Rectangle dirtButton = {370, 10, 80, 30}; // Position and size of the "DIRT" button
     Rectangle fireButton = {460, 10, 80, 30}; // Position and size of the "FIRE" button
     Rectangle coalButton = {550, 10, 80, 30}; // Position and size of the "COAL" button
