@@ -11,8 +11,8 @@
 
 using namespace std;
 
-const int screenWidth = 1728;
-const int screenHeight = 972;
+const int screenWidth = 1884;
+const int screenHeight = 756;
 const int pixelSize = 4; // min 2
 const int gridWidth = screenWidth / pixelSize;
 const int gridHeight = screenHeight / pixelSize;
@@ -1011,7 +1011,7 @@ int main() {
 
     // Cleanup code
     for (int i = 0; i < 4; i++) {
-        UnloadTexture(frames[i]); // Don't forget to unload textures to avoid memory leaks
+        UnloadTexture(frames[i]);
     }
 
     CloseWindow();
