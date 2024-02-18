@@ -11,7 +11,7 @@
 
 using namespace std;
 
-const int screenWidth = 1884;
+const int screenWidth = 1504;
 const int screenHeight = 756;
 const int pixelSize = 4; // min 2
 const int gridWidth = screenWidth / pixelSize;
