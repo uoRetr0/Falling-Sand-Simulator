@@ -31,7 +31,7 @@ The Falling Sand Simulator is an engaging web and desktop application that offer
 ### Running the Simulator
 
 - **Web Version**: Access the simulation directly in the browser via the provided URL.
-- **Desktop Version**: After compiling the project according to the operating system-specific instructions, launch the application to start the simulation.
+- **Desktop Version**: After compiling the project according to the operating system-specific instructions, launch the application to start the simulation. The `main.exe` is a windows compiled application.
 
 ## Future Improvements
 
